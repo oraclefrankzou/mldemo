@@ -1,0 +1,56 @@
+import matplotlib.pyplot  as plt
+import json
+import keras
+
+
+"""
+   func:
+   author:
+   date
+
+"""
+def plotModelMetric(history):
+    accuracy = history.history['accuracy']
+    x = [x for x in range(1, len(accuracy) + 1)]
+    acc_y = history.history['accuracy']
+    valacc_y = history.history['val_accuracy']
+    plt.plot(x, acc_y, 'b', label='accuracy')
+    plt.plot(x, valacc_y, 'bo', label='validate_accuracy')
+    plt.legend()
+    plt.show()
+
+
+
+"""
+   func: split model file and weights ,load
+   author:
+   date
+
+"""
+def loadModel(path):
+    modelfile = os.path.join(path,'Model.json')
+    weightfile = os.path.join(path, 'Weight')
+    if os.path.isfile(modelfile):
+        with open(modelfile, 'r') as f:
+            model = keras.models.model_from_json(json.load(f))
+        model.load_weights(weightfile)
+        return model
+    else:
+        print('model file do not exists...')
+        return None
+
+
+""""
+   func: split model file and weights ,save
+   author:
+   date
+
+"""
+def saveModel(path,model):
+    modelfile = os.path.join(path,'Model.json')
+    weightfile = os.path.join(path, 'Weight')
+    with open(modelfile,'w') as f:
+        json.dump(model.to_json(),f)
+    model.save_weights(filepath=weightfile)
+    print('save model file sucessfule')
+    return 1
