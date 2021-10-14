@@ -18,7 +18,7 @@ from tensorflow.keras.utils import to_categorical
 import os
 from PIL import EpsImagePlugin
 
-#downlaod from https://www.ghostscript.com/download/gsdnld.html
+#download from https://www.ghostscript.com/download/gsdnld.html
 EpsImagePlugin.gs_windows_binary='C:\\Program Files\\gs\\gs9.55.0\\bin\\gswin64c.exe'
 
 
@@ -118,10 +118,10 @@ class MainWin():
 
         self.canvas.postscript(file= 'm.eps')
         self.img = Image.open('m.eps')
-        self.img.save('m.jpg')
-        loadimage =  kerasimage.load_img('m.jpg',target_size=(28,28),color_mode='grayscale')
-        imgarray = kerasimage.img_to_array(loadimage)
-        imgarray = np.expand_dims(imgarray,axis=0)
+        self.img = self.img.resize((28,28))
+        loadimage = self.img.convert('L')
+        imgarray = np.array(loadimage)
+        imgarray = imgarray.reshape((1,28,28,1))
         imgarray = imgarray/255.
         predictresult = self.model.predict([imgarray])[0]
         proablitystr = round(max(predictresult) * 100)
