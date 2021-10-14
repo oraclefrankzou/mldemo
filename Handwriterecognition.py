@@ -13,8 +13,14 @@ import numpy as np
 from tensorflow import keras
 from keras.models import load_model
 from keras.datasets import mnist
+from keras.preprocessing import image as kerasimage
 from tensorflow.keras.utils import to_categorical
 import os
+from PIL import EpsImagePlugin
+
+#downlaod from https://www.ghostscript.com/download/gsdnld.html
+EpsImagePlugin.gs_windows_binary='C:\\Program Files\\gs\\gs9.55.0\\bin\\gswin64c.exe'
+
 
 def getargs():
     """
@@ -52,11 +58,12 @@ def getModel(filename):
     traindata, trainlabel, testdata, testlabel = getMnist()
     model = keras.models.Sequential()
     model.add(keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)))
+    model.add(keras.layers.MaxPooling2D((2, 2)))
     model.add(keras.layers.Conv2D(64, (3, 3), activation='relu'))
     model.add(keras.layers.MaxPooling2D((2, 2)))
     model.add(keras.layers.Dropout(0.25))
     model.add(keras.layers.Flatten())
-    model.add(keras.layers.Dense(256, activation='relu'))
+    model.add(keras.layers.Dense(512, activation='relu'))
     model.add(keras.layers.Dropout(0.5))
     model.add(keras.layers.Dense(10, activation='softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
@@ -69,7 +76,7 @@ class MainWin():
         self.model = model
         self.window = tk.Tk()
         self.window.title = 'HandWrite Recognition App'
-        self.canvas = tk.Canvas(self.window,width=200,height=200,bg='white')
+        self.canvas = tk.Canvas(self.window,width=300,height=300,bg='white',cursor='cross')
         self.button2 = tk.Button(self.window, text='clean', command=self.cleanCanvas)
         self.button3 = tk.Button(self.window, text='predi', command=self.saveImage)
         self.label = tk.Label(self.window)
@@ -78,9 +85,6 @@ class MainWin():
         self.label.pack()
         self.canvas.bind("<B1-Motion>",self.draw_smth)
         self.canvas.pack()
-
-        self.saveimage = Image.new('RGB',(200,200),(255,255,255))
-        self.draw = ImageDraw.Draw(self.saveimage)
         self.window.mainloop()
 
     def cleanCanvas(self):
@@ -89,8 +93,6 @@ class MainWin():
             :return clean all canvas object and reset ImageDraw object
             :date
         """
-        self.saveimage = Image.new('RGB',(200,200),(255,255,255))
-        self.draw = ImageDraw.Draw(self.saveimage)
         self.canvas.delete('all')
         self.label['text'] = ''
 
@@ -102,14 +104,10 @@ class MainWin():
         """
         self.linex = event.x
         self.liney = event.y
-        r = 1
-        self.line = self.canvas.create_line((self.linex-r, self.liney-r, self.linex+r, self.liney+r),
-                           fill='black',width=10
+        r = 15
+        self.line = self.canvas.create_oval((self.linex-r, self.liney-r, self.linex+r, self.liney+r),
+                           fill='black'
                            )
-        self.draw.line((self.linex-r, self.liney-r, self.linex+r, self.liney+r),
-                           fill='black',width=10
-                         )
-        self.lasx, self.lasy = event.x, event.y
 
     def saveImage(self):
         """
@@ -117,15 +115,20 @@ class MainWin():
             :return predict image.update label['txt]
             :date
         """
-        self.saveimage= self.saveimage.resize((28,28))
-        self.saveimage= self.saveimage.convert(mode='L')
-        imgarray = np.array(self.saveimage)
-        imgarray = imgarray.reshape(1,28,28,1)
-        imgarray = imgarray.astype('float32')/225.
+
+        self.canvas.postscript(file= 'm.eps')
+        self.img = Image.open('m.eps')
+        self.img.save('m.jpg')
+        loadimage =  kerasimage.load_img('m.jpg',target_size=(28,28),color_mode='grayscale')
+        imgarray = kerasimage.img_to_array(loadimage)
+        imgarray = np.expand_dims(imgarray,axis=0)
+        imgarray = imgarray/255.
         predictresult = self.model.predict([imgarray])[0]
-        proablitystr = round(max(predictresult)*100)
+        proablitystr = round(max(predictresult) * 100)
         resultstr = np.argmax(predictresult)
-        self.label['text'] = 'result: %s,proab:%s%%'%(str(resultstr) , str(proablitystr))
+        self.label['text'] = 'result: %s,proab:%s%%' % (str(resultstr), str(proablitystr))
+
+
 
 
 def main():
